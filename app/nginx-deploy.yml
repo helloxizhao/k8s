@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: knginx
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: knginx
+    spec:
+      containers:
+      - name: knginx
+        image: harbor.gagogroup.cn/api/nginx
+        imagePullPolicy: IfNotPresent
+      imagePullSecrets:
+        - name: harbor-secret
