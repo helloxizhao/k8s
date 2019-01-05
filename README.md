@@ -1,4 +1,4 @@
-1、首先创建账号
+1、首先创建账号</br>
 aws configure
 输入用户名密码以及区域之后，创建一个IAM用户kops
 aws iam create-group --group-name kops
