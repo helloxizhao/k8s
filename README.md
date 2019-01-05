@@ -113,3 +113,8 @@ ab -n 100000 -c 1000 http://knginx.gagogroup.cn/index.html</br>
 done</br>
 然后在master终端节点kubectl get pod -w</br>
 查看pod的创建情况，如果pending的话，一会后面就会有新的node添加进来了</br>
+参考链接</br>
+https://github.com/nwcdlabs/kops-cn</br>
+https://github.com/kubernetes-incubator/metrics-server</br>
+https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler</br>
+https://github.com/kubernetes/ingress-nginx
