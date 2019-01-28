@@ -13,3 +13,5 @@ kubectl apply -f prometheus-svc.yml</br>
 kubectl apply -f grafana.yml </br>
 kubectl apply -f granfa-svc.yml </br>
 在此部署完毕。
+在导入grafana prometheus模板的时候，利用的kubernetes-cluster-monitoring-via-prometheus_rev3.json模板，如果磁盘的利用率一直出不来的话，
+需要手动更改模板文件，里面的磁盘的名称根据自己的磁盘名称进行更改，如xda,xvda.....
