@@ -1,0 +1,217 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: kube-system
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      scrape_timeout: 30s
+
+    rule_files:
+    - /etc/prometheus/rules.yml
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+          - targets: ["localhost:9093"]
+
+    scrape_configs:
+    - job_name: 'prometheus'
+      static_configs:
+        - targets: ['localhost:9090']
+
+    - job_name: 'kubernetes-apiservers'
+      kubernetes_sd_configs:
+      - role: endpoints
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+    - job_name: 'kubernetes-nodes'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+    - job_name: 'kubernetes-cadvisor'
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+
+    - job_name: 'kubernetes-node-exporter'
+      scheme: http
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - source_labels: [__meta_kubernetes_role]
+        action: replace
+        target_label: kubernetes_role
+      - source_labels: [__address__]
+        regex: '(.*):10250'
+        replacement: '${1}:31672'
+        target_label: __address__
+
+    - job_name: 'kubernetes-service-endpoints'
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+        action: replace
+        target_label: __scheme__
+        regex: (https?)
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+        action: replace
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        action: replace
+        target_label: kubernetes_name
+
+    - job_name: 'kubernetes-services'
+      metrics_path: /probe
+      params:
+        module: [http_2xx]
+
+      kubernetes_sd_configs:
+      - role: service
+
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+        action: keep
+        regex: true
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: __address__
+        replacement: blackbox-exporter.example.com:9115
+      - source_labels: [__param_target]
+        target_label: instance
+      - action: labelmap
+        regex: __meta_kubernetes_service_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_service_name]
+        target_label: kubernetes_name
+
+  rules.yml: |
+    groups:
+    - name: test-rule
+      rules:
+      - alert: NodeFilesystemUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100 > 1
+        for: 15s 
+        annotations:
+          summary: "{{$labels.instance}}: High Filesystem usage detected"
+          description: "{{$labels.instance}}: Filesystem usage is above 1% (current value is: {{ $value }}"
+      - alert: NodeMemoryUsage
+        expr:  (node_memory_MemTotal_bytes - (node_memory_MemFree_bytes+node_memory_Buffers_bytes+node_memory_Cached_bytes )) / node_memory_MemTotal_bytes * 100 > 1
+        for: 15s
+        annotations:
+          summary: "{{$labels.instance}}: High Memory usage detected"
+          description: "{{$labels.instance}}: Memory usage is above 1% (current value is: {{ $value }}"
+      - alert: NodeCPUUsage
+        expr: 100 - (avg by (instance)(irate(node_cpu_seconds_total{mode="idle"}[1m]) )) * 100 > 1 
+        for: 15s
+        annotations:
+          summary: "{{$labels.instance}}: High CPU usage detected"
+          description: "{{$labels.instance}}: CPU usage is above 1% (current value is: {{ $value }}"
+
+---
+#kind: ConfigMap
+#apiVersion: v1
+#metadata:
+#  name: alertmanager
+#  namespace: kube-system
+#data:
+#  config.yml: |-
+#    global:
+#      resolve_timeout: 5m
+#      wechat_api_url: 'https://qyapi.weixin.qq.com/cgi-bin/'
+#      wechat_api_secret: 'xrPGLFPptrD2FxyTWp_m4lsI9KzyteaqAvwv3A49Ndg' 
+#      wechat_api_corp_id: 'wwf2d0734bd2eb4b41'
+#      resolve_timeout: 1m
+#    route:
+#      group_by: ['alertname']
+#      receiver: 'wechat'
+#      group_wait: 30s
+#      group_interval: 5m
+#      repeat_interval: 4h
+#    receivers:
+#    - name: 'wechat'
+#      wechat_configs:
+#      - corp_id: 'wwf2d0734bd2eb4b41'
+#        to_user: '@all' 
+#        agent_id: '1000047'
+#        api_secret: 'xrPGLFPptrD2FxyTWp_m4lsI9KzyteaqAvwv3A49Ndg' 
+#        send_resolved: true
+#
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: alertmanager
+  namespace: kube-system
+data:
+  config.yml: |-
+    global:
+      smtp_smarthost: 'smtp.163.com:25'
+      smtp_from: 'xuejinliang7@163.com'
+      smtp_auth_username: '*@163.com'
+      smtp_auth_password: '******'
+      smtp_require_tls: false
+    route:
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 10m
+      receiver: email 
+    receivers:
+    - name: 'email'
+      email_configs:
+      - to: '****'
