@@ -1,17 +1,17 @@
-下面介绍prometheus结合grafana监控pod以及实现邮件和微信报警</br>
-1、首先应用node-exporter.yml这个文件，node-exporter是用来收集各个pod的信息的<br>
-kubectl apply -f node-exporter.yaml</br>
-2、创建prometheus以及alertmanager服务</br>
-kubectl apply -f prometheus-cm-wechat.yml</br>
-kubectl apply -f prometheus-deploy.yml</br>
-kubectl apply -f prometheus-sa.yaml</br>
-kubectl apply -f prometheus-svc.yml</br>
-在此处prometheus和alertmanager是封装在同一个pod中的，所以prometheus的configmap中，alertmanager的地址填写的是localhost:9093</br>
-另外一个需要注意的是，alertmanager的image需要用quay.io/prometheus/alertmanager:v0.15.1,如果版本比较低的话，会导致微信报警失败</br>
-另外在此处自定义了微信报警的模板，在wechattemplate目录下</br>
-之后定义定义grafana的yml文件</br>
-kubectl apply -f grafana.yml </br>
-kubectl apply -f granfa-svc.yml </br>
+下面介绍prometheus结合grafana监控pod以及实现邮件和微信报警
+1、首先应用node-exporter.yml这个文件，node-exporter是用来收集各个pod的信息的
+kubectl apply -f node-exporter.yaml
+2、创建prometheus以及alertmanager服务
+kubectl apply -f prometheus-cm-wechat.yml
+kubectl apply -f prometheus-deploy.yml
+kubectl apply -f prometheus-sa.yaml
+kubectl apply -f prometheus-svc.yml
+在此处prometheus和alertmanager是封装在同一个pod中的，所以prometheus的configmap中，alertmanager的地址填写的是localhost:9093
+另外一个需要注意的是，alertmanager的image需要用quay.io/prometheus/alertmanager:v0.15.1,如果版本比较低的话，会导致微信报警失败
+另外在此处自定义了微信报警的模板，在wechattemplate目录下
+之后定义定义grafana的yml文件
+kubectl apply -f grafana.yml 
+kubectl apply -f granfa-svc.yml
 在此部署完毕。
 在导入grafana prometheus模板的时候，利用的kubernetes-cluster-monitoring-via-prometheus_rev3.json模板，如果磁盘的利用率一直出不来的话，
 需要手动更改模板文件，里面的磁盘的名称根据自己的磁盘名称进行更改，如xda,xvda.....
