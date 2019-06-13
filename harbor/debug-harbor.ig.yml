@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: harbor-debug
+  annotations:
+    traefik.frontend.rule.type: PathPrefixStrip  
+spec:
+  rules:
+  - host: k8s.spacecig.com
+    http:
+      paths:
+      - path: /harbor
+        backend:
+          serviceName: nginx
+          servicePort: 80

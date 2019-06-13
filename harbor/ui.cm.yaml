@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-ui-config
+data:
+  CONFIG_PATH: /etc/ui/app.conf
+  LOG_LEVEL: warn
+  UI_SECRET: "BBRQwySksiHZqJUh"
+  JOBSERVICE_SECRET: "HM9jKtcl9FZUGMtT"
+  GODEBUG: netdns=cgo
+  SECRET_KEY: "nQImBn5SVCHL7ehq"
+  ADMIN_SERVER_URL: http://adminserver
+  config: |
+    appname = registry
+    runmode = dev
+    [lang]
+    types = en-US|zh-CN
+    names = en-US|zh-CN
+    [dev]
+    httpport = 80
+    [mail]
+    host = smtp.mydomain.com
+    port = 25
+    username = sample_admin@mydomain.com
+    password = abc
+    from = admin <sample_admin@mydomain.com>
+    ssl = false
+  pkey: |
+    -----BEGIN RSA PRIVATE KEY-----
+    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
+    -----END RSA PRIVATE KEY-----
+    
+
+

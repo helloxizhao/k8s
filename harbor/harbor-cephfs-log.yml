@@ -1,0 +1,17 @@
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: harbor-log
+spec:
+  metadataPool:
+    replicated:
+      size: 2
+  dataPools:
+    - failureDomain: osd
+      replicated:
+        size: 2
+  metadataServer:
+    activeCount: 1
+    activeStandby: true
+    placement:
+    resources:

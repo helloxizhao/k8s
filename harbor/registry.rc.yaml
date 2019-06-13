@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: registry-rc
+  labels:
+    name: registry-rc
+spec:
+  replicas: 1
+  selector:
+    name: registry-apps
+  template:
+    metadata:
+      labels:
+        name: registry-apps
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: 192.168.74.101  
+      containers:
+      - name: registry-app
+        image: reg.local:5000/public/registry:2.6.2
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 5000
+        - containerPort: 5001
+        volumeMounts:
+        - name: config
+          mountPath: /etc/docker/registry
+        - name: storage
+          mountPath: /storage
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-registry-config
+          items:
+          - key: config
+            path: config.yml
+          - key: cert
+            path: root.crt
+      - name: storage
+        flexVolume:
+          driver: ceph.rook.io/rook
+          fsType: ceph
+          options:
+            fsName: harbor-registry-cephfs
+            clusterNamespace: kube-public         
+#        persistentVolumeClaim:
+#          claimName: registry-pvc

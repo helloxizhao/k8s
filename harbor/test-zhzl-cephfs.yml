@@ -1,0 +1,14 @@
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: test-zhzl-new
+spec:
+  dataPools:
+    - replicated:
+        size: 2
+  metadataPool:
+    replicated:
+      size: 2
+  metadataServer:
+    activeCount: 1
+    activeStandby: true
